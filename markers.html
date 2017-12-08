@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <meta charset="utf-8">
+    <title>Marker Clustering</title>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript" src="exif.json"></script>
+    <div id="map"></div>
+    <script>
+      var input = document
+      function degreesToDecimal(gpsLatLon) {
+        var d = gpsLatLon[0];
+        var m = gpsLatLon[1];
+        var s = gpsLatLon[2];
+        return d + (m/60.0) + (s/3600);
+      }
+      function initMap() {
+
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 3,
+          center: {lat: 52.024, lng: 13.887}
+        });
+
+        // Create an array of alphabetical characters used to label the markers.
+        var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        var infowindows = imagePaths.map(function(imagePath, i) {
+          console.log('creating infowindow');
+          var contentString = '<div>' + 
+            '<h3>' + imagePath.split('/')[2] + '</h3>' +
+            '<img src="' + imagePath + '" height="200"/>' +
+            '</div>';
+
+          return new google.maps.InfoWindow({
+            content: contentString
+          });
+        });
+
+
+        // Add some markers to the map.
+        // Note: The code uses the JavaScript Array.prototype.map() method to
+        // create an array of markers based on a given "locations" array.
+        // The map() method here has nothing to do with the Google Maps API.
+        var markers = locations.map(function(location, i) {
+          console.log('creating markers');
+          var m = new google.maps.Marker({
+            map: map,
+            position: location,
+            label: labels[i % labels.length]
+          });
+          m.addListener('click', function() {
+            infowindows[i].open(map, m);
+          });
+          return m;
+        });
+      }
+      var locations = [];
+      var imagePaths = [];
+      var jqxhr = $.getJSON( "exif.json", function(data) {
+        // console.log(data);
+        data.forEach(function(d, index) {
+          // console.log(d.imagePath);
+          if(d.gps.GPSLongitude && d.gps.GPSLatitude){
+            var latlon = {
+              lat: degreesToDecimal(d.gps.GPSLatitude),
+              lng: degreesToDecimal(d.gps.GPSLongitude)
+            };
+            console.log(latlon);
+            if(d.gps.GPSLongitudeRef == 'W') {
+            	latlon.lng *= -1;
+            }
+            // console.log(latlon);
+            if(latlon.lng > 75) {
+              console.log(d.imagePath);
+            }
+            locations.push(latlon);
+            imagePaths.push(d.imagePath);
+          }
+        })
+      })
+        .done(function() {
+          console.log( "second success" );
+        })
+        .fail(function() {
+          console.log( "error" );
+        })
+        .always(function() {
+          console.log( "complete" )
+          initMap();
+        });
+     
+    </script>
+    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js">
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_z5DfnxdDwI5RmdCx_2VuqdsmwU58TKE&callback=initMap">
+    </script>
+  </body>
+</html>
